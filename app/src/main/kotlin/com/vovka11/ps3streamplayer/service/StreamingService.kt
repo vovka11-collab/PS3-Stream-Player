@@ -13,10 +13,6 @@ import io.ktor.server.routing.*
 import kotlinx.coroutines.*
 import org.fourthline.cling.UpnpService
 import org.fourthline.cling.UpnpServiceImpl
-import org.fourthline.cling.model.meta.*
-import org.fourthline.cling.model.types.ServiceType
-import org.fourthline.cling.model.types.UDAServiceType
-import org.fourthline.cling.model.types.UDADeviceType
 import java.io.File
 
 class StreamingService : Service() {
@@ -50,12 +46,8 @@ class StreamingService : Service() {
         
         serviceScope.launch {
             try {
-                // Запуск HTTP сервера
                 startHttpServer()
-                
-                // Запуск UPnP/DLNA сервиса
                 startUPnPService()
-                
                 isRunning = true
                 Log.d(TAG, "Streaming service started")
             } catch (e: Exception) {
@@ -82,28 +74,24 @@ class StreamingService : Service() {
     private suspend fun startHttpServer() {
         httpServer = embeddedServer(CIO, port = PORT) {
             routing {
-                // DLNA Device Descriptor
                 get("/device.xml") {
                     val deviceDescriptor = generateDeviceDescriptor()
                     call.respondText(deviceDescriptor, contentType = io.ktor.http.ContentType.Application.Xml)
                 }
                 
-                // Content Directory Service Description
                 get("/contentdir.xml") {
                     val serviceDescriptor = generateContentDirectoryService()
                     call.respondText(serviceDescriptor, contentType = io.ktor.http.ContentType.Application.Xml)
                 }
                 
-                // Connection Manager Service Description
                 get("/connectionmgr.xml") {
                     val serviceDescriptor = generateConnectionManagerService()
                     call.respondText(serviceDescriptor, contentType = io.ktor.http.ContentType.Application.Xml)
                 }
                 
-                // Video streaming endpoint
                 get("/video/{id}") {
                     val id = call.parameters["id"] ?: return@get
-                    val file = File(filesDir, "videos/$id.mp4")
+                    val file = File(filesDir, "videos/${'$'}id.mp4")
                     if (file.exists()) {
                         call.respondFile(file, io.ktor.http.ContentType.Video.MP4)
                     } else {
@@ -111,9 +99,7 @@ class StreamingService : Service() {
                     }
                 }
                 
-                // Media browsing endpoint
                 post("/upnp/control/ContentDirectory1") {
-                    // Handle UPnP control requests
                     call.respondText("<s:Envelope></s:Envelope>", contentType = io.ktor.http.ContentType.Application.Xml)
                 }
             }
@@ -121,55 +107,12 @@ class StreamingService : Service() {
     }
 
     private fun startUPnPService() {
-        upnpService = UpnpServiceImpl()
-        upnpService?.registry?.addDevice(createMediaServerDevice())
-    }
-
-    private fun createMediaServerDevice(): Device<*, *, *> {
-        val localAddress = getLocalIpAddress()
-        val baseUrl = "http://$localAddress:$PORT"
-        
-        return LocalDevice(
-            deviceMetadata = DeviceIdentity(
-                deviceType = UDADeviceType("MediaServer", 1),
-                baseURL = baseUrl
-            ),
-            type = UDADeviceType("MediaServer", 1),
-            details = DeviceDetails(
-                friendlyName = "PS3 Stream Player",
-                manufacturer = "PS3StreamPlayer",
-                manufacturerURI = "http://localhost",
-                modelDescription = "Stream converter for PS3",
-                modelName = "PS3StreamPlayer",
-                modelNumber = "1.0",
-                modelURI = "http://localhost",
-                serialNumber = "12345"
-            ),
-            services = arrayOf(
-                createContentDirectoryService(),
-                createConnectionManagerService()
-            )
-        )
-    }
-
-    private fun createContentDirectoryService(): LocalService<*> {
-        return LocalService(
-            serviceType = UDAServiceType("ContentDirectory", 1),
-            serviceId = "urn:upnp-org:serviceId:ContentDirectory",
-            descriptorURI = "/contentdir.xml",
-            controlURI = "/upnp/control/ContentDirectory1",
-            eventSubscriptionURI = "/upnp/control/ContentDirectory1"
-        )
-    }
-
-    private fun createConnectionManagerService(): LocalService<*> {
-        return LocalService(
-            serviceType = UDAServiceType("ConnectionManager", 1),
-            serviceId = "urn:upnp-org:serviceId:ConnectionManager",
-            descriptorURI = "/connectionmgr.xml",
-            controlURI = "/upnp/control/ConnectionManager1",
-            eventSubscriptionURI = "/upnp/control/ConnectionManager1"
-        )
+        try {
+            upnpService = UpnpServiceImpl()
+            Log.d(TAG, "UPnP service started")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start UPnP service", e)
+        }
     }
 
     private fun generateDeviceDescriptor(): String {
@@ -221,39 +164,8 @@ class StreamingService : Service() {
     <actionList>
         <action>
             <name>Browse</name>
-            <argumentList>
-                <argument>
-                    <name>ObjectID</name>
-                    <relatedStateVariable>A_ARG_TYPE_ObjectID</relatedStateVariable>
-                    <direction>in</direction>
-                </argument>
-                <argument>
-                    <name>BrowseFlag</name>
-                    <relatedStateVariable>A_ARG_TYPE_BrowseFlag</relatedStateVariable>
-                    <direction>in</direction>
-                </argument>
-                <argument>
-                    <name>Result</name>
-                    <relatedStateVariable>A_ARG_TYPE_Result</relatedStateVariable>
-                    <direction>out</direction>
-                </argument>
-            </argumentList>
         </action>
     </actionList>
-    <serviceStateTable>
-        <stateVariable sendEvents="no">
-            <name>A_ARG_TYPE_ObjectID</name>
-            <dataType>string</dataType>
-        </stateVariable>
-        <stateVariable sendEvents="no">
-            <name>A_ARG_TYPE_BrowseFlag</name>
-            <dataType>string</dataType>
-        </stateVariable>
-        <stateVariable sendEvents="no">
-            <name>A_ARG_TYPE_Result</name>
-            <dataType>string</dataType>
-        </stateVariable>
-    </serviceStateTable>
 </scpd>"""
     }
 
@@ -264,33 +176,6 @@ class StreamingService : Service() {
         <major>1</major>
         <minor>0</minor>
     </specVersion>
-    <actionList>
-        <action>
-            <name>GetProtocolInfo</name>
-            <argumentList>
-                <argument>
-                    <name>Source</name>
-                    <relatedStateVariable>SourceProtocolInfo</relatedStateVariable>
-                    <direction>out</direction>
-                </argument>
-                <argument>
-                    <name>Sink</name>
-                    <relatedStateVariable>SinkProtocolInfo</relatedStateVariable>
-                    <direction>out</direction>
-                </argument>
-            </argumentList>
-        </action>
-    </actionList>
-    <serviceStateTable>
-        <stateVariable sendEvents="yes">
-            <name>SourceProtocolInfo</name>
-            <dataType>string</dataType>
-        </stateVariable>
-        <stateVariable sendEvents="yes">
-            <name>SinkProtocolInfo</name>
-            <dataType>string</dataType>
-        </stateVariable>
-    </serviceStateTable>
 </scpd>"""
     }
 
