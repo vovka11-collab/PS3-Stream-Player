@@ -49,8 +49,8 @@ dependencies {
     implementation("io.ktor:ktor-server-cio:2.3.5")
     implementation("io.ktor:ktor-network:2.3.5")
 
-    // FFmpeg
-    implementation("com.arthenica:mobile-ffmpeg-full:4.4.LTS")
+    // FFmpeg - Working alternative
+    implementation("com.github.wseemann:FFmpegMediaMetadataRetriever:0.2.4")
 
     // DLNA/UPnP
     implementation("org.fourthline.cling:cling-core:2.1.2")
