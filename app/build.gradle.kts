@@ -36,7 +36,12 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-extended")
     debugImplementation("androidx.compose.ui:ui-tooling")
+
+    // Lifecycle
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.6")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.6")
 
     // Network and HTTP
     implementation("androidx.work:work-runtime-ktx:2.8.1")
@@ -44,10 +49,21 @@ dependencies {
     implementation("io.ktor:ktor-server-cio:2.3.5")
     implementation("io.ktor:ktor-network:2.3.5")
 
+    // FFmpeg
+    implementation("com.arthenica:mobile-ffmpeg-full:4.4.LTS")
+
+    // DLNA/UPnP
+    implementation("org.fourthline.cling:cling-core:2.1.2")
+    implementation("org.fourthline.cling:cling-support:2.1.2")
+
     // Logging
     implementation("org.slf4j:slf4j-api:2.0.9")
     implementation("org.slf4j:slf4j-simple:2.0.9")
 
     // XML for UPnP
     implementation("org.xmlpull:xpp3:1.1.4c")
+
+    // Coroutines
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
 }
