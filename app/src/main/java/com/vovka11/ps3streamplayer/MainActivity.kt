@@ -1,21 +1,16 @@
 package com.vovka11.ps3streamplayer
 
-import android.app.ActivityManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
-import android.provider.MediaStore
 import android.util.Log
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
@@ -38,11 +33,13 @@ class MainActivity : ComponentActivity() {
             val binder = service as StreamingService.StreamingBinder
             streamingService = binder.getService()
             isServiceBound = true
+            Log.d("MainActivity", "Service bound successfully")
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
             isServiceBound = false
             streamingService = null
+            Log.d("MainActivity", "Service disconnected")
         }
     }
 
@@ -51,6 +48,7 @@ class MainActivity : ComponentActivity() {
         
         Intent(this, StreamingService::class.java).also { intent ->
             bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
+            startService(intent)
         }
 
         setContent {
@@ -58,8 +56,7 @@ class MainActivity : ComponentActivity() {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     MainScreen(
                         onStartStreaming = { startStreaming() },
-                        onStopStreaming = { stopStreaming() },
-                        onSelectFile = { pickVideoFile() }
+                        onStopStreaming = { stopStreaming() }
                     )
                 }
             }
@@ -82,11 +79,6 @@ class MainActivity : ComponentActivity() {
         Log.d("MainActivity", "Streaming stopped")
     }
 
-    private fun pickVideoFile() {
-        val intent = Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI)
-        startActivity(intent)
-    }
-
     override fun onDestroy() {
         super.onDestroy()
         if (isServiceBound) {
@@ -99,8 +91,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainScreen(
     onStartStreaming: () -> Unit,
-    onStopStreaming: () -> Unit,
-    onSelectFile: () -> Unit
+    onStopStreaming: () -> Unit
 ) {
     var serverRunning by remember { mutableStateOf(false) }
 
@@ -260,9 +251,9 @@ fun MainScreen(
                 )
                 
                 val steps = listOf(
-                    "1. Start the server with button above",
-                    "2. Ensure PS3 is on same network",
-                    "3. Go to PS3 Media Server settings",
+                    "1. Start server with button above",
+                    "2. PS3 on same network",
+                    "3. PS3: Media Server → Settings",
                     "4. Scan for Media Servers",
                     "5. Select 'PS3 Stream Player'",
                     "6. Browse and play videos"
